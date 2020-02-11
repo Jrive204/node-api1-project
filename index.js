@@ -2,8 +2,10 @@
 const express = require("express");
 const Users = require("./data/db");
 const server = express();
+const cors = require("cors");
 
 server.use(express.json());
+server.use(cors());
 
 server.get("/", (req, res) => {
   res.json({ Hello: "testing" });
@@ -38,7 +40,12 @@ server.post("/api/users", (req, res) => {
 
   Users.insert(Userinfo)
     .then(users =>
-      Userinfo.name && Userinfo.bio
+      Object.keys(req.body).length > 2
+        ? res.status(500).json({
+            errorMessage:
+              "There was an error while saving the user to the database!!S!"
+          })
+        : Userinfo.name && Userinfo.bio
         ? res.status(201).json(users)
         : res.status(400).json({
             message: "Please provide name and bio for the user."
@@ -46,12 +53,12 @@ server.post("/api/users", (req, res) => {
     )
     .catch(err =>
       !Userinfo.name || !Userinfo.bio
-        ? res
-            .status(400)
-            .json({ errorMessage: "Please provide name and bio for the user." })
+        ? res.status(400).json({
+            errorMessage: "Please provide name and bio for the user!!."
+          })
         : res.status(500).json({
             errorMessage:
-              "There was an error while saving the user to the database"
+              "There was an error while saving the user to the database..."
           })
     );
 });
@@ -77,27 +84,29 @@ server.delete("/api/users/:id", (req, res) => {
 server.put("/api/users/:id", (req, res) => {
   const { id } = req.params;
   const { name, bio } = req.body;
-  //   if (!name || !bio) {
-  //     res.status(400).json({ errorMessage: "Please provide a username and bio" });
-  //   } else {
+
   Users.update(id, { name, bio })
     .then(user =>
       !user
-        ? res
-            .status(404)
-            .json({ message: "The user with the specified ID does not exist" })
-        : !name || !bio
-        ? res
-            .status(400)
-            .json({ errorMessage: "Please provide a username and bio" })
-        : null
+        ? res.status(404).json({
+            message: "The user with the specified ID does not exist"
+          })
+        : Object.keys(req.body).length > 2
+        ? res.status(500).json({
+            errorMessage: "The user information could not be modified!!"
+          })
+        : name && bio
+        ? res.status(200).json(user) &
+          console.log(Object.keys(req.body).length > 2)
+        : res.status(400).json({
+            message: "Please provide name and bio for the user."
+          })
     )
     .catch(err => {
-      res
-        .status(500)
-        .json({ errorMessage: "The user information could not be modified." });
+      res.status(500).json({
+        errorMessage: "The user information could not be modified."
+      });
     });
-  //   }
 });
 
 const port = 5000;
